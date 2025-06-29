@@ -1,5 +1,15 @@
 {
     "accounts": {
+        "Bank": {
+            "type": "asset",
+            "debit": [
+                1000,
+                40
+            ],
+            "credit": [
+                20
+            ]
+        },
         "Equity": {
             "type": "equity",
             "debit": [],
@@ -7,28 +17,67 @@
                 1000
             ]
         },
-        "Bank": {
+        "Cash": {
             "type": "asset",
             "debit": [
-                1000
+                20,
+                10
             ],
-            "credit": []
+            "credit": [
+                10
+            ]
+        },
+        "Armin": {
+            "type": "person",
+            "debit": [
+                10
+            ],
+            "credit": [
+                10
+            ]
+        },
+        "Hani": {
+            "type": "person",
+            "debit": [],
+            "credit": [
+                40
+            ]
         }
     },
     "transactions": {
         "date": [
+            "2025-06-29",
+            "2025-06-29",
+            "2025-06-29",
+            "2025-06-29",
             "2025-06-29"
         ],
         "debit_account": [
-            "Bank"
+            "Bank",
+            "Cash",
+            "Armin",
+            "Bank",
+            "Cash"
         ],
         "credit_account": [
-            "Equity"
+            "Equity",
+            "Bank",
+            "Cash",
+            "Hani",
+            "Armin"
         ],
         "amount": [
-            1000
+            1000,
+            20,
+            10,
+            40,
+            10
         ],
         "describtion": [
+            "",
+            "",
+            "",
+            "",
             ""
         ]
     }

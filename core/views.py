@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, HttpResponse
 from datetime import datetime
 import json
 
-DEBIT_TYPES = ['asset', 'expense']
+DEBIT_TYPES = ['asset', 'expense', 'person']
 CREDIT_TYPES = ['liability', 'income', 'equity']
 
 
@@ -115,3 +115,54 @@ def transactions_report(request):
         'end_date': end_date_str,
     }
     return render(request, 'core/transactions.html', context)
+
+
+def accounts_balance(request):
+    with open('db.json', 'r') as file:
+        db = json.load(file)
+
+    balances = []
+
+    for account_name, info in db['accounts'].items():
+        debit_total = sum(info.get('debit', []))
+        credit_total = sum(info.get('credit', []))
+        if info['type'] in DEBIT_TYPES:
+            balance = debit_total - credit_total
+        elif info['type'] in CREDIT_TYPES:
+            balance = credit_total - debit_total
+
+        balances.append({
+            'name': account_name,
+            'type': info['type'],
+            'debit_total': debit_total,
+            'credit_total': credit_total,
+            'balance': balance
+        })
+
+    return render(request, 'core/balances.html', context={'balances': balances})
+
+
+def persons_report(request):
+    with open('db.json', 'r', encoding='utf-8') as file:
+        db = json.load(file)
+
+    persons = []
+
+    for name, info in db['accounts'].items():
+        if info['type'] == 'person':
+            debit_total = sum(info.get('debit', []))
+            credit_total = sum(info.get('credit', []))
+            balance = debit_total - credit_total
+
+            status = "Debtor" if balance > 0 else "Creditor" if balance < 0 else "Settled"
+
+            persons.append({
+                'name': name,
+                'debit_total': debit_total,
+                'credit_total': credit_total,
+                'balance': abs(balance),
+                'status': status
+            })
+
+    return render(request, 'core/persons.html', {'persons': persons})
+
