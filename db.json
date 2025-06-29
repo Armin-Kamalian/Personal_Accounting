@@ -1,0 +1,16 @@
+{
+    "accounts": {
+        "equity": {
+            "type": "asset",
+            "debit": [],
+            "credit": []
+        }
+    },
+    "transactions": {
+        "date": [],
+        "debit_account": [],
+        "credit_account": [],
+        "amount": [],
+        "describtion": []
+    }
+}

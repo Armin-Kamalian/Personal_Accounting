@@ -5,6 +5,7 @@ import json
 DEBIT_TYPES = ['asset', 'expense']
 CREDIT_TYPES = ['liability', 'income', 'equity']
 
+
 def home(request):
     try:
         with open('db.json', 'r') as file:
@@ -21,3 +22,23 @@ def home(request):
 
     accounts = list(db["accounts"].keys())
     return render(request, "core/index.html", context={'accounts': accounts})
+
+
+def add_account(request):
+    if request.method == 'POST':
+        with open('db.json', 'r') as file:
+            db = json.load(file)
+
+        account = request.POST.get('account_name')
+        account_type = request.POST.get('account_type')
+
+        if account not in db['accounts']:
+            db['accounts'][account] = {
+                'type': account_type, 'debit': [], 'credit': []}
+        else:
+            return HttpResponse('Account Already Exist')
+
+        with open('db.json', 'w') as file:
+            json.dump(db, file, indent=4)
+
+    return redirect('/')
