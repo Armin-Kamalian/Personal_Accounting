@@ -29,14 +29,14 @@ def add_account(request):
         with open('db.json', 'r') as file:
             db = json.load(file)
 
-        account = request.POST.get('account_name')
+        account_name = request.POST.get('account_name')
         account_type = request.POST.get('account_type')
 
-        if account not in db['accounts']:
-            db['accounts'][account] = {
+        if account_name not in db['accounts']:
+            db['accounts'][account_name] = {
                 'type': account_type, 'debit': [], 'credit': []}
         else:
-            return HttpResponse('Account Already Exist')
+            return HttpResponse('Account Already Exists')
 
         with open('db.json', 'w') as file:
             json.dump(db, file, indent=4)
