@@ -75,3 +75,43 @@ def add_transaction(request):
             json.dump(db, file, indent=4)
 
         return redirect('/')
+
+
+def transactions_report(request):
+    with open('db.json', 'r',) as file:
+        db = json.load(file)
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    transactions = []
+
+    for i in range(len(db['transactions']['date'])):
+        date_str = db['transactions']['date'][i]
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            if date_obj < start_date:
+                continue
+
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            if date_obj > end_date:
+                continue
+
+        transaction = {
+            'date': date_str,
+            'debit': db['transactions']['debit_account'][i],
+            'credit': db['transactions']['credit_account'][i],
+            'amount': db['transactions']['amount'][i],
+            'description': db['transactions']['describtion'][i],
+        }
+        transactions.append(transaction)
+
+    context = {
+        'transactions': transactions,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+    }
+    return render(request, 'core/transactions.html', context)
