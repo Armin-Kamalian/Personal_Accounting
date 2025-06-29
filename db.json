@@ -1,16 +1,35 @@
 {
     "accounts": {
-        "equity": {
-            "type": "asset",
+        "Equity": {
+            "type": "equity",
             "debit": [],
+            "credit": [
+                1000
+            ]
+        },
+        "Bank": {
+            "type": "asset",
+            "debit": [
+                1000
+            ],
             "credit": []
         }
     },
     "transactions": {
-        "date": [],
-        "debit_account": [],
-        "credit_account": [],
-        "amount": [],
-        "describtion": []
+        "date": [
+            "2025-06-29"
+        ],
+        "debit_account": [
+            "Bank"
+        ],
+        "credit_account": [
+            "Equity"
+        ],
+        "amount": [
+            1000
+        ],
+        "describtion": [
+            ""
+        ]
     }
 }
