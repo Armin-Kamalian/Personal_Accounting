@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -73,7 +74,7 @@
                 <input type="text" name="amount" class="form-control" placeholder="Amount" required />
               </div>
               <div class="col-md-10 mt-2">
-                <input type="text" name="describtion" class="form-control" placeholder="Describtion (Optional)" />
+                <input type="text" name="description" class="form-control" placeholder="Description (Optional)" />
               </div>
               <div class="col-md-2 mt-2">
                 <input type="date" name="date" class="form-control" />
@@ -92,6 +93,8 @@
             <a href="{% url 'transactions_report' %}"><button class="btn btn-success">transactions</button></a>
             <a href="{% url 'accounts_balance' %}"><button class="btn btn-success">Balances</button></a>
             <a href="{% url 'persons_report' %}"><button class="btn btn-success">Persons</button></a>
+            <a href="{% url 'income_expense_report' %}"><button class="btn btn-success">income_expense</button></a>
+            <a href="{% url 'balance_sheet' %}"><button class="btn btn-success">balance_sheet</button></a>
           </div>
         </div>
       </div>

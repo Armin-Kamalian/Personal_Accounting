@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, HttpResponse
 from datetime import datetime
 import json
-
+import uuid
 
 ACCOUNT_TYPES = ['asset', 'liability', 'income', 'expense', 'equity', 'person']
 DEBIT_TYPES = ['asset', 'expense', 'person']
@@ -14,11 +14,6 @@ def home(request):
             db = json.load(file)
     except FileNotFoundError:
         db = {'accounts': {}, 'transactions': {}}
-        db['transactions']['date'] = []
-        db['transactions']['debit_account'] = []
-        db['transactions']['credit_account'] = []
-        db['transactions']['amount'] = []
-        db['transactions']['describtion'] = []
         with open('db.json', 'w') as file:
             json.dump(db, file, indent=4)
 
@@ -53,7 +48,7 @@ def add_transaction(request):
 
         debit_account = request.POST.get('debit_account')
         credit_account = request.POST.get('credit_account')
-        describtion = request.POST.get('describtion')
+        description = request.POST.get('description')
         date = request.POST.get('date')
 
         if debit_account not in db['accounts'] or credit_account not in db['accounts']:
@@ -67,11 +62,14 @@ def add_transaction(request):
         db['accounts'][debit_account]['debit'].append(amount)
         db['accounts'][credit_account]['credit'].append(amount)
 
-        db['transactions']['date'].append(date)
-        db['transactions']['debit_account'].append(debit_account)
-        db['transactions']['credit_account'].append(credit_account)
-        db['transactions']['amount'].append(amount)
-        db['transactions']['describtion'].append(describtion)
+        transaction_id = str(uuid.uuid4())
+        db['transactions'][transaction_id] = {
+            "date": date,
+            "debit_account": debit_account,
+            "credit_account": credit_account,
+            "amount": amount,
+            "describtion": description
+        }
 
         with open('db.json', 'w') as file:
             json.dump(db, file, indent=4)
@@ -80,7 +78,7 @@ def add_transaction(request):
 
 
 def transactions_report(request):
-    with open('db.json', 'r',) as file:
+    with open('db.json', 'r') as file:
         db = json.load(file)
 
     start_date_str = request.GET.get('start_date')
@@ -88,9 +86,11 @@ def transactions_report(request):
 
     transactions = []
 
-    for i in range(len(db['transactions']['date'])):
-        date_str = db['transactions']['date'][i]
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+    for txn_id, txn in db['transactions'].items():
+        try:
+            date_obj = datetime.strptime(txn['date'], "%Y-%m-%d").date()
+        except Exception:
+            continue
 
         if start_date_str:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -102,13 +102,8 @@ def transactions_report(request):
             if date_obj > end_date:
                 continue
 
-        transaction = {
-            'date': date_str,
-            'debit': db['transactions']['debit_account'][i],
-            'credit': db['transactions']['credit_account'][i],
-            'amount': db['transactions']['amount'][i],
-            'description': db['transactions']['describtion'][i],
-        }
+        transaction = txn.copy()
+        transaction['id'] = txn_id
         transactions.append(transaction)
 
     context = {
@@ -122,7 +117,7 @@ def transactions_report(request):
 def accounts_balance(request):
     selected_types = request.GET.getlist('type')
 
-    with open('db.json', 'r', encoding='utf-8') as file:
+    with open('db.json', 'r') as file:
         db = json.load(file)
 
     balances = []
@@ -159,7 +154,7 @@ def accounts_balance(request):
 
 
 def persons_report(request):
-    with open('db.json', 'r', encoding='utf-8') as file:
+    with open('db.json', 'r') as file:
         db = json.load(file)
 
     persons = []
@@ -181,3 +176,131 @@ def persons_report(request):
             })
 
     return render(request, 'core/persons.html', {'persons': persons})
+
+
+def income_expense_report(request):
+
+    with open('db.json', 'r') as file:
+        db = json.load(file)
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    income_total = 0
+    expense_total = 0
+
+    income_transactions = []
+    expense_transactions = []
+
+    for txn_id, txn in db['transactions'].items():
+        try:
+            date_obj = datetime.strptime(txn['date'], "%Y-%m-%d").date()
+        except Exception:
+            continue
+
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            if date_obj < start_date:
+                continue
+
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            if date_obj > end_date:
+                continue
+
+        if db['accounts'][txn['debit_account']]['type'] == 'expense':
+            expense_total += txn['amount']
+            expense_transactions.append(txn)
+
+        if db['accounts'][txn['credit_account']]['type'] == 'income':
+            income_total += txn['amount']
+            income_transactions.append(txn)
+
+
+    NET_RESULT = income_total - expense_total
+    context = {
+        'income_total': income_total,
+        'expense_total': expense_total,
+        'income_transactions': income_transactions,
+        'expense_transactions': expense_transactions,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+        'net_result': NET_RESULT,
+    }
+    return render(request, 'core/income_expense.html', context)
+
+
+def balance_sheet(request):
+    with open('db.json', 'r') as file:
+        db = json.load(file)
+
+    assets = []
+    liabilities = []
+    equities = []
+
+    total_assets = total_liabilities = total_equity = 0
+
+    for name, info in db['accounts'].items():
+        debit_total = sum(info.get('debit', []))
+        credit_total = sum(info.get('credit', []))
+        acc_type = info['type']
+
+        if acc_type == 'asset':
+            balance = debit_total - credit_total
+            assets.append({'name': name, 'balance': balance})
+            total_assets += balance
+
+        elif acc_type in ['liability']:
+            balance = credit_total - debit_total
+            liabilities.append({'name': name, 'balance': balance})
+            total_liabilities += balance
+
+        elif acc_type in ['person']:
+            balance = credit_total - debit_total
+            liabilities.append({'name': name, 'balance': balance})
+            total_liabilities += balance
+
+        elif acc_type == 'equity':
+            balance = credit_total - debit_total
+            equities.append({'name': name, 'balance': balance})
+            total_equity += balance
+
+        YOU_HAVE = total_assets - total_liabilities
+
+    return render(request, 'core/balance_sheet.html', {
+        'assets': assets,
+        'liabilities': liabilities,
+        'equities': equities,
+        'total_assets': total_assets,
+        'total_liabilities': total_liabilities,
+        'total_equity': total_equity,
+        'you_have': YOU_HAVE,
+    })
+
+
+def delete_transaction(request, txn_id):
+    with open('db.json', 'r') as file:
+        db = json.load(file)
+
+    if txn_id in db['transactions']:
+        txn = db['transactions'][txn_id]
+
+        debit_account = txn['debit_account']
+        credit_account = txn['credit_account']
+        amount = txn['amount']
+
+        if amount in db['accounts'][debit_account]['debit']:
+            db['accounts'][debit_account]['debit'].remove(amount)
+
+        if amount in db['accounts'][credit_account]['credit']:
+            db['accounts'][credit_account]['credit'].remove(amount)
+
+        del db['transactions'][txn_id]
+
+        with open('db.json', 'w') as file:
+            json.dump(db, file, indent=4)
+
+        return redirect('/transactions')
+    else:
+        return HttpResponse("Transaction not found", status=404)
+

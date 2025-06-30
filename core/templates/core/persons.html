@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,9 +25,9 @@
                 {% for person in persons %}
                 <tr>
                     <td>{{ person.name }}</td>
-                    <td>{{ person.debit_total }}</td>
-                    <td>{{ person.credit_total }}</td>
-                    <td>{{ person.balance }}</td>
+                    <td>{{ person.debit_total|intcomma }}</td>
+                    <td>{{ person.credit_total|intcomma }}</td>
+                    <td>{{ person.balance|intcomma }}</td>
                     <td>
                         {% if person.status == 'Debtor' %}
                             <span class="text-danger">{{ person.status }}</span>

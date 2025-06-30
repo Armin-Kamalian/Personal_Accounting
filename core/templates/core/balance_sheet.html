@@ -1,0 +1,92 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Balance Sheet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  </head>
+  <body class="p-4 bg-light">
+    <div class="container">
+      <h2 class="text-center mb-4">Balance Sheet</h2>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card border-primary mb-4">
+            <div class="card-header bg-primary text-white">Assets</div>
+            <div class="card-body p-0">
+              <table class="table table-bordered mb-0">
+                <tbody>
+                  {% for a in assets %}
+                    <tr>
+                      <td>{{ a.name }}</td>
+                      <td>{{ a.balance|intcomma }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th>Total</th>
+                    <th>{{ total_assets|intcomma }}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card border-danger mb-4">
+            <div class="card-header bg-danger text-white">Liabilities</div>
+            <div class="card-body p-0">
+              <table class="table table-bordered mb-0">
+                <tbody>
+                  {% for l in liabilities %}
+                    <tr>
+                      <td>{{ l.name }}</td>
+                      <td>{{ l.balance|intcomma }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th>Total</th>
+                    <th>{{ total_liabilities|intcomma }}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div class="card border-success">
+            <div class="card-header bg-success text-white">Equity</div>
+            <div class="card-body p-0">
+              <table class="table table-bordered mb-0">
+                <tbody>
+                  {% for e in equities %}
+                    <tr>
+                      <td>{{ e.name }}</td>
+                      <td>{{ e.balance|intcomma }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th>Total</th>
+                    <th>{{ total_equity|intcomma }}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h5 class="text-center mt-4">
+        <strong style="color:rgb(14, 120, 111);">YOU HAVE = {{ you_have|intcomma }}</strong><br><br>
+        <strong>Assets = {{ total_assets|intcomma }}</strong><br/>
+        <strong>Liabilities + Equity = {{ total_liabilities|add:total_equity|intcomma }}</strong>
+      </h5>
+    </div>
+  </body>
+</html>
