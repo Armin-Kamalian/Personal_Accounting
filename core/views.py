@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, HttpResponse
 from datetime import datetime
 import json
 
+
+ACCOUNT_TYPES = ['asset', 'liability', 'income', 'expense', 'equity', 'person']
 DEBIT_TYPES = ['asset', 'expense', 'person']
 CREDIT_TYPES = ['liability', 'income', 'equity']
 
@@ -118,28 +120,42 @@ def transactions_report(request):
 
 
 def accounts_balance(request):
-    with open('db.json', 'r') as file:
+    selected_types = request.GET.getlist('type')
+
+    with open('db.json', 'r', encoding='utf-8') as file:
         db = json.load(file)
 
     balances = []
 
     for account_name, info in db['accounts'].items():
+        acc_type = info.get('type')
+
+        if selected_types and acc_type not in selected_types:
+            continue
+
         debit_total = sum(info.get('debit', []))
         credit_total = sum(info.get('credit', []))
-        if info['type'] in DEBIT_TYPES:
+
+        if acc_type in DEBIT_TYPES:
             balance = debit_total - credit_total
-        elif info['type'] in CREDIT_TYPES:
+        elif acc_type in CREDIT_TYPES:
             balance = credit_total - debit_total
+        else:
+            balance = 0
 
         balances.append({
             'name': account_name,
-            'type': info['type'],
+            'type': acc_type,
             'debit_total': debit_total,
             'credit_total': credit_total,
             'balance': balance
         })
 
-    return render(request, 'core/balances.html', context={'balances': balances})
+    return render(request, 'core/balances.html', {
+        'balances': balances,
+        'selected_types': selected_types,
+        'account_types': ACCOUNT_TYPES
+    })
 
 
 def persons_report(request):
@@ -165,4 +181,3 @@ def persons_report(request):
             })
 
     return render(request, 'core/persons.html', {'persons': persons})
-
