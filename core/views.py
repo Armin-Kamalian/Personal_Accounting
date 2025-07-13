@@ -3,6 +3,8 @@ from datetime import datetime
 import json
 import uuid
 
+
+FILE_NAME = 'db.json'
 ACCOUNT_TYPES = ['asset', 'liability', 'income', 'expense', 'equity', 'person']
 DEBIT_TYPES = ['asset', 'expense', 'person']
 CREDIT_TYPES = ['liability', 'income', 'equity']
@@ -10,20 +12,20 @@ CREDIT_TYPES = ['liability', 'income', 'equity']
 
 def home(request):
     try:
-        with open('db.json', 'r') as file:
+        with open(FILE_NAME, 'r', encoding='utf-8') as file:
             db = json.load(file)
     except FileNotFoundError:
         db = {'accounts': {}, 'transactions': {}}
-        with open('db.json', 'w') as file:
-            json.dump(db, file, indent=4)
+        with open(FILE_NAME, 'w', encoding='utf-8') as file:
+            json.dump(db, file, indent=4, ensure_ascii=False)
 
-    accounts = list(db["accounts"].keys())
-    return render(request, "core/index.html", context={'accounts': accounts})
+    accounts = sorted(db['accounts'].keys())
+    return render(request, 'core/index.html', context={'accounts': accounts})
 
 
 def add_account(request):
     if request.method == 'POST':
-        with open('db.json', 'r') as file:
+        with open(FILE_NAME, 'r', encoding='utf-8') as file:
             db = json.load(file)
 
         account_name = request.POST.get('account_name').strip().title()
@@ -35,15 +37,15 @@ def add_account(request):
         else:
             return HttpResponse('Account Already Exists')
 
-        with open('db.json', 'w') as file:
-            json.dump(db, file, indent=4)
+        with open(FILE_NAME, 'w', encoding='utf-8') as file:
+            json.dump(db, file, indent=4, ensure_ascii=False)
 
     return redirect('/')
 
 
 def add_transaction(request):
     if request.method == 'POST':
-        with open('db.json', 'r') as file:
+        with open(FILE_NAME, 'r', encoding='utf-8') as file:
             db = json.load(file)
 
         debit_account = request.POST.get('debit_account')
@@ -52,33 +54,33 @@ def add_transaction(request):
         date = request.POST.get('date')
 
         if debit_account not in db['accounts'] or credit_account not in db['accounts']:
-            return HttpResponse("One of the accounts does not exist!", status=400)
+            return HttpResponse('One of the accounts does not exist!', status=400)
 
         try:
             amount = int(request.POST.get('amount'))
         except (ValueError, TypeError):
-            return HttpResponse("Invalid amount", status=400)
+            return HttpResponse('Invalid amount', status=400)
 
         db['accounts'][debit_account]['debit'].append(amount)
         db['accounts'][credit_account]['credit'].append(amount)
 
         transaction_id = str(uuid.uuid4())
         db['transactions'][transaction_id] = {
-            "date": date,
-            "debit_account": debit_account,
-            "credit_account": credit_account,
-            "amount": amount,
-            "describtion": description
+            'date': date,
+            'debit_account': debit_account,
+            'credit_account': credit_account,
+            'amount': amount,
+            'description': description
         }
 
-        with open('db.json', 'w') as file:
-            json.dump(db, file, indent=4)
+        with open(FILE_NAME, 'w', encoding='utf-8') as file:
+            json.dump(db, file, indent=4, ensure_ascii=False)
 
         return redirect('/')
 
 
 def transactions_report(request):
-    with open('db.json', 'r') as file:
+    with open(FILE_NAME, 'r', encoding='utf-8') as file:
         db = json.load(file)
 
     start_date_str = request.GET.get('start_date')
@@ -88,36 +90,37 @@ def transactions_report(request):
 
     for txn_id, txn in db['transactions'].items():
         try:
-            date_obj = datetime.strptime(txn['date'], "%Y-%m-%d").date()
+            date_obj = datetime.strptime(txn['date'], '%Y-%m-%d').date()
         except Exception:
             continue
 
         if start_date_str:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             if date_obj < start_date:
                 continue
 
         if end_date_str:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
             if date_obj > end_date:
                 continue
 
         transaction = txn.copy()
         transaction['id'] = txn_id
         transactions.append(transaction)
+        transactions.sort(key=lambda x: x['date'])
 
     context = {
         'transactions': transactions,
         'start_date': start_date_str,
         'end_date': end_date_str,
     }
-    return render(request, 'core/transactions.html', context)
+    return render(request, 'core/transactions_list.html', context)
 
 
 def accounts_balance(request):
     selected_types = request.GET.getlist('type')
 
-    with open('db.json', 'r') as file:
+    with open(FILE_NAME, 'r', encoding='utf-8') as file:
         db = json.load(file)
 
     balances = []
@@ -146,7 +149,9 @@ def accounts_balance(request):
             'balance': balance
         })
 
-    return render(request, 'core/balances.html', {
+        balances.sort(key=lambda x: (x['type'], -x['balance']))
+
+    return render(request, 'core/accounts_balance.html', {
         'balances': balances,
         'selected_types': selected_types,
         'account_types': ACCOUNT_TYPES
@@ -154,7 +159,7 @@ def accounts_balance(request):
 
 
 def persons_report(request):
-    with open('db.json', 'r') as file:
+    with open(FILE_NAME, 'r', encoding='utf-8') as file:
         db = json.load(file)
 
     persons = []
@@ -165,7 +170,7 @@ def persons_report(request):
             credit_total = sum(info.get('credit', []))
             balance = debit_total - credit_total
 
-            status = "Debtor" if balance > 0 else "Creditor" if balance < 0 else "Settled"
+            status = 'Debtor' if balance > 0 else 'Creditor' if balance < 0 else 'Settled'
 
             persons.append({
                 'name': name,
@@ -175,12 +180,12 @@ def persons_report(request):
                 'status': status
             })
 
-    return render(request, 'core/persons.html', {'persons': persons})
+    return render(request, 'core/persons_report.html', {'persons': persons})
 
 
 def income_expense_report(request):
 
-    with open('db.json', 'r') as file:
+    with open(FILE_NAME, 'r', encoding='utf-8') as file:
         db = json.load(file)
 
     start_date_str = request.GET.get('start_date')
@@ -194,17 +199,17 @@ def income_expense_report(request):
 
     for txn_id, txn in db['transactions'].items():
         try:
-            date_obj = datetime.strptime(txn['date'], "%Y-%m-%d").date()
+            date_obj = datetime.strptime(txn['date'], '%Y-%m-%d').date()
         except Exception:
             continue
 
         if start_date_str:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             if date_obj < start_date:
                 continue
 
         if end_date_str:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
             if date_obj > end_date:
                 continue
 
@@ -215,7 +220,6 @@ def income_expense_report(request):
         if db['accounts'][txn['credit_account']]['type'] == 'income':
             income_total += txn['amount']
             income_transactions.append(txn)
-
 
     NET_RESULT = income_total - expense_total
     context = {
@@ -231,7 +235,7 @@ def income_expense_report(request):
 
 
 def balance_sheet(request):
-    with open('db.json', 'r') as file:
+    with open(FILE_NAME, 'r', encoding='utf-8') as file:
         db = json.load(file)
 
     assets = []
@@ -279,7 +283,7 @@ def balance_sheet(request):
 
 
 def delete_transaction(request, txn_id):
-    with open('db.json', 'r') as file:
+    with open(FILE_NAME, 'r', encoding='utf-8') as file:
         db = json.load(file)
 
     if txn_id in db['transactions']:
@@ -297,10 +301,9 @@ def delete_transaction(request, txn_id):
 
         del db['transactions'][txn_id]
 
-        with open('db.json', 'w') as file:
-            json.dump(db, file, indent=4)
+        with open(FILE_NAME, 'w', encoding='utf-8') as file:
+            json.dump(db, file, indent=4, ensure_ascii=False)
 
         return redirect('/transactions')
     else:
-        return HttpResponse("Transaction not found", status=404)
-
+        return HttpResponse('Transaction not found', status=404)

@@ -1,0 +1,63 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Account Balances</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+</head>
+<body class="p-3">
+  {% include 'navbar.html' %}
+  <h1 class="text-center mt-3">Account Balances</h1>
+
+  <form method="get" class="mb-4 border rounded p-3 bg-light w-75 mx-auto" id="filterForm">
+    <div class="row align-items-center">
+      <div class="col-12 fw-bold mb-2">Filter by account type:</div>
+
+      {% for t in account_types %}
+        <div class="col-auto form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" name="type" value="{{ t }}"
+                 id="check_{{ t }}" onchange="document.getElementById('filterForm').submit();"
+                 {% if t in selected_types %}checked{% endif %}>
+          <label class="form-check-label" for="check_{{ t }}">{{ t|title }}</label>
+        </div>
+      {% endfor %}
+
+      <div class="col-12 mt-3">
+        <a href="{% url 'accounts_balance' %}" class="btn btn-sm btn-outline-danger">Clear Filters</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="table-responsive w-75 mx-auto">
+    <table class="table table-striped table-bordered align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th scope="col">Account</th>
+          <th scope="col">Type</th>
+          <th scope="col">Total Debit</th>
+          <th scope="col">Total Credit</th>
+          <th scope="col">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for acc in balances %}
+          <tr>
+            <td>{{ acc.name }}</td>
+            <td>{{ acc.type|title }}</td>
+            <td>{{ acc.debit_total|intcomma }}</td>
+            <td>{{ acc.credit_total|intcomma }}</td>
+            <td>{{ acc.balance|intcomma }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center">No accounts found for selected filter.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+
+</html>
